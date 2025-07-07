@@ -1,102 +1,89 @@
-import crypto from "crypto";
+import CryptoJS from "crypto-js";
 
 /**
- * EncDec class provides utility methods for:
- * - AES-256-CBC encryption
- * - AES-256-CBC decryption
- * - SHA-256 hashing
+ * EncDec – Utility class for:
+ *  • AES-256-CBC encryption / decryption (PKCS#7 padding)
+ *  • SHA-256 hashing
  *
- * The class requires an AES secret key and IV (initialization vector) in hex format.
+ * Pure-JS implementation (crypto-js) → safe in pkg-built executables.
  */
 export class EncDec {
   /**
-   * Constructs an EncDec instance with provided AES key and IV.
-   * @param {string} secretKeyHex - AES 256-bit key in hexadecimal format (64 characters)
-   * @param {string} ivHex - AES initialization vector in hexadecimal format (32 characters)
+   * @param {string} secretKeyHex 64-char hex string (32 bytes)
+   * @param {string} ivHex        32-char hex string (16 bytes)
+   * @throws {Error} If key/IV format invalid
    */
   constructor(secretKeyHex, ivHex) {
-    if (!secretKeyHex || !ivHex) {
-      throw new Error("Secret key and IV must be provided.");
+    try {
+      if (!/^[0-9a-fA-F]{64}$/.test(secretKeyHex))
+        throw new Error("Secret key must be 64-character hexadecimal");
+      if (!/^[0-9a-fA-F]{32}$/.test(ivHex))
+        throw new Error("IV must be 32-character hexadecimal");
+
+      /** @private */ this.key = CryptoJS.enc.Hex.parse(secretKeyHex);
+      /** @private */ this.iv = CryptoJS.enc.Hex.parse(ivHex);
+    } catch (err) {
+      throw new Error(`EncDec init failed: ${err.message}`);
     }
-
-    // AES encryption algorithm with 256-bit key in CBC mode
-    this.algorithm = "aes-256-cbc";
-
-    // Convert hex string inputs into buffer objects required by crypto APIs
-    this.secretKey = Buffer.from(secretKeyHex, "hex");
-    this.iv = Buffer.from(ivHex, "hex");
   }
 
   /**
-   * Encrypts a plaintext string using AES-256-CBC.
-   *
-   * @param {string} payload - The plaintext string to encrypt.
-   * @returns {string} - The encrypted string in hexadecimal format.
+   * Encrypt plaintext with AES-256-CBC.
+   * @param   {string} plaintext UTF-8 string
+   * @returns {string} Ciphertext (hex)
+   * @throws  {Error}  If encryption fails
    */
-  encryptPayload(payload) {
+  encryptPayload(plaintext) {
     try {
-      // Create AES cipher instance
-      const cipher = crypto.createCipheriv(
-        this.algorithm,
-        this.secretKey,
-        this.iv
+      const encrypted = CryptoJS.AES.encrypt(plaintext, this.key, {
+        iv: this.iv,
+        mode: CryptoJS.mode.CBC,
+        padding: CryptoJS.pad.Pkcs7,
+      });
+      return encrypted.ciphertext.toString(CryptoJS.enc.Hex);
+    } catch (err) {
+      throw new Error(`Encryption failed: ${err.message}`);
+    }
+  }
+
+  /**
+   * Decrypt hex ciphertext with AES-256-CBC.
+   * @param   {string} cipherHex Hex string (multiple of 32 chars)
+   * @returns {string} Decrypted UTF-8 string
+   * @throws  {Error}  If validation or decryption fails
+   */
+  decryptPayload(cipherHex) {
+    // Validate hex format & block alignment (16-byte blocks → 32 hex chars)
+    if (!/^[0-9a-fA-F]+$/.test(cipherHex) || cipherHex.length % 32 !== 0) {
+      throw new Error(
+        "Ciphertext must be hexadecimal and block-aligned (32, 64, … chars)"
       );
-
-      // Perform encryption
-      let encrypted = cipher.update(payload, "utf8", "hex");
-      encrypted += cipher.final("hex");
-
-      return encrypted;
-    } catch (error) {
-      console.log(`[❌] Error in encryptPayload: ${error.message}`);
-      throw error;
     }
-  }
 
-  /**
-   * Decrypts an encrypted hexadecimal string using AES-256-CBC.
-   *
-   * @param {string} payload - The encrypted hex string to decrypt.
-   * @returns {string} - The decrypted original plaintext string.
-   */
-  decryptPayload(payload) {
     try {
-      // Create AES decipher instance
-      const decipher = crypto.createDecipheriv(
-        this.algorithm,
-        this.secretKey,
-        this.iv
+      const cipherWords = CryptoJS.enc.Hex.parse(cipherHex);
+      const decrypted = CryptoJS.AES.decrypt(
+        { ciphertext: cipherWords },
+        this.key,
+        { iv: this.iv, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }
       );
-
-      // Perform decryption
-      let decrypted = decipher.update(payload, "hex", "utf8");
-      decrypted += decipher.final("utf8");
-
-      return decrypted;
-    } catch (error) {
-      console.log(`[❌] Error in decryptPayload: ${error.message}`);
-      throw error;
+      return CryptoJS.enc.Utf8.stringify(decrypted);
+    } catch (err) {
+      throw new Error(`Decryption failed: ${err.message}`);
     }
   }
 
   /**
-   * Creates a SHA-256 hash of the provided plaintext input.
-   *
-   * @param {string} payload - Input string to hash.
-   * @returns {string} - SHA-256 hash in hexadecimal format.
+   * SHA-256 hash helper.
+   * @param   {string} data Input string
+   * @returns {string}  Hex-encoded SHA-256 digest
+   * @throws  {Error}   If hashing fails
    */
-  hashPayload(payload) {
+  hashPayload(data) {
     try {
-      // Create SHA-256 hash instance
-      const hash = crypto.createHash("sha256");
-
-      // Feed payload into the hash
-      hash.update(payload);
-
-      return hash.digest("hex");
-    } catch (error) {
-      console.log(`[❌] Error in hashPayload: ${error.message}`);
-      throw error;
+      return CryptoJS.SHA256(data).toString(CryptoJS.enc.Hex);
+    } catch (err) {
+      throw new Error(`Hashing failed: ${err.message}`);
     }
   }
 }

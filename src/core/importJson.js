@@ -3,9 +3,9 @@
 import fs from "fs";
 import path from "path";
 import chalk from "chalk";
-import ora from "ora";
 import { exportResultsToFile } from "../cli/exporter.js";
 import { handleUnexpectedError } from "./error.js";
+import { createSpinner } from "../utils/spinner.js";
 
 /**
  * Handles the complete JSON import and decryption workflow including:
@@ -52,7 +52,7 @@ export async function handleJsonImportFlow(encdec, jsonPath) {
     }
 
     // Initialize decryption process
-    const spinner = ora("🔍 Decrypting social security numbers...").start();
+    const spinner = createSpinner("🔍 Decrypting social security numbers...").start();
     const results = [];
     let success = 0;
     let failed = 0;

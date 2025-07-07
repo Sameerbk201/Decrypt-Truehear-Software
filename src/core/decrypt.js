@@ -1,11 +1,11 @@
 import chalk from "chalk";
-import ora from "ora";
 import { exportResultsToFile } from "../cli/exporter.js";
 import {
   postAddActionMenu,
   postDecryptActionMenu,
   promptEncryptedKey,
 } from "../cli/prompt.js";
+import { createSpinner } from "../utils/spinner.js";
 /**
  * Handles the complete decryption workflow including:
  * - Collecting multiple encrypted keys
@@ -23,6 +23,8 @@ import {
  * await handleDecryptionFlow(encdec);
  */
 export async function handleDecryptionFlow(encdec) {
+ 
+
   // Store collected key pairs (encrypted + decrypted)
   const keyPairs = [];
   let continueLoop = true;
@@ -39,10 +41,9 @@ export async function handleDecryptionFlow(encdec) {
     let action = await postAddActionMenu();
     // Start decryption process with loading indicator
     if (action === "decrypt") {
-      const spinner = ora("Decrypting...").start();
+      const spinner = createSpinner("Decrypting...").start();
       let success = 0,
         failed = 0;
-
       for (let entry of keyPairs) {
         try {
           entry.Decrypted = encdec.decryptPayload(entry.Encrypted);
