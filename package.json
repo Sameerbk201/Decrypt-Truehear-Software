@@ -1,0 +1,42 @@
+{
+  "name": "decryptionsoftwaretruehear",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "src/index.js",
+  "bin": "dist/bundle.cjs",
+  "scripts": {
+    "build": "node build.js && npm run pkg-all",
+    "pkg-all": "npm run pkg-win && npm run pkg-linux && npm run pkg-macos",
+    "pkg-win": "pkg dist/bundle.cjs --targets node18-win-x64 --output dist/decrypt-win.exe",
+    "pkg-linux": "pkg dist/bundle.cjs --targets node18-linux-x64 --output dist/decrypt-linux",
+    "pkg-macos": "pkg dist/bundle.cjs --targets node18-macos-x64 --output dist/decrypt-macos"
+  },
+  "keywords": [
+    "cli",
+    "terminal",
+    "decryption",
+    "interactive",
+    "truehear"
+  ],
+  "author": "sameerbk201",
+  "license": "ISC",
+  "description": "A terminal-based decryption software with beautiful UI",
+  "dependencies": {
+    "chalk": "^5.4.1",
+    "csv-parse": "^5.6.0",
+    "inquirer": "^12.5.0",
+    "ora": "^8.2.0",
+    "yargs": "^17.7.2"
+  },
+  "pkg": {
+    "scripts": [
+      "dist/bundle.cjs"
+    ],
+    "assets": [
+      "src/**/*.json"
+    ]
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.5"
+  }
+}
