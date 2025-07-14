@@ -51,7 +51,7 @@ It supports:
 ### 🛠️ Installation (Development)
 
 ```bash
-git clone https://github.com/your-username/truehear-decryption-cli.git
+git clone https://github.com/Sameerbk201/truehear-decryption-cli.git
 cd truehear-decryption-cli
 npm install
 ```
